@@ -9,6 +9,10 @@ interface Question {
   timeLimit: number;
 }
 
+const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+  ? `http://${window.location.hostname}:3001/api`
+  : 'https://mentex-mkii.onrender.com/api';
+
 export default function QuizEditor({ quiz, onClose, onSave }: { quiz: any, onClose: () => void, onSave: () => void }) {
   const [title, setTitle] = useState(quiz.title);
   const [questions, setQuestions] = useState<Question[]>(
@@ -21,7 +25,7 @@ export default function QuizEditor({ quiz, onClose, onSave }: { quiz: any, onClo
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      await fetch(`http://localhost:3001/api/quizzes/${quiz.id}`, {
+      await fetch(`${API_URL}/quizzes/${quiz.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ title, questions })
