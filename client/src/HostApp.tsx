@@ -25,6 +25,7 @@ export default function HostApp() {
   const [quizzes, setQuizzes] = useState<any[]>([]);
   const [selectedQuiz, setSelectedQuiz] = useState<number | null>(null);
   const [isReconnecting, setIsReconnecting] = useState<boolean>(true);
+  const [randomize, setRandomize] = useState<boolean>(false);
 
   useEffect(() => {
     fetch(`${SERVER_URL}/api/quizzes`)
@@ -96,7 +97,7 @@ export default function HostApp() {
 
   const selectQuiz = (id: number) => {
     setSelectedQuiz(id);
-    socket.emit('host:create-room', { quizId: id });
+    socket.emit('host:create-room', { quizId: id, randomize });
   };
 
   const startGame = () => {
@@ -137,8 +138,21 @@ export default function HostApp() {
       {!selectedQuiz && gameState === 'LOBBY' && (
         <main className="flex-1 flex flex-col items-center p-12 overflow-y-auto">
           <h1 className="text-5xl font-black text-indigo-400 mb-2">MenteX</h1>
-          <h2 className="text-xl text-slate-400 mb-12">Selecione um Quiz para ser o Host:</h2>
+          <h2 className="text-xl text-slate-400 mb-8">Selecione um Quiz para ser o Host:</h2>
           
+          <div className="mb-8 flex items-center gap-3 bg-slate-800 p-4 rounded-xl border border-slate-700 shadow-lg hover:border-indigo-500/50 transition-colors cursor-pointer" onClick={() => setRandomize(!randomize)}>
+            <input 
+              type="checkbox" 
+              id="randomize" 
+              checked={randomize} 
+              onChange={(e) => setRandomize(e.target.checked)}
+              className="w-5 h-5 accent-indigo-500 cursor-pointer pointer-events-none"
+            />
+            <label htmlFor="randomize" className="text-lg text-slate-200 cursor-pointer select-none pointer-events-none font-medium">
+              Aleatorizar ordem das questões
+            </label>
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-6xl">
             {quizzes.map(q => (
               <button 

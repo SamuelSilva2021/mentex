@@ -100,7 +100,7 @@ io.on('connection', (socket: Socket<ClientToServerEvents, ServerToClientEvents>)
   console.log('A user connected:', socket.id);
 
   // HOST creates a room
-  socket.on('host:create-room', async ({ quizId }) => {
+  socket.on('host:create-room', async ({ quizId, randomize }) => {
     try {
       const quiz = await prisma.quiz.findUnique({
         where: { id: quizId },
@@ -108,13 +108,20 @@ io.on('connection', (socket: Socket<ClientToServerEvents, ServerToClientEvents>)
       });
       if (!quiz) return socket.emit('error', 'Quiz não encontrado');
 
-      const questions: Question[] = quiz.questions.map((q: any) => ({
+      let questions: Question[] = quiz.questions.map((q: any) => ({
         id: q.id,
         text: q.text,
         options: JSON.parse(q.options),
         correctIndex: q.correctIndex,
         timeLimit: q.timeLimit
       }));
+
+      if (randomize) {
+        for (let i = questions.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [questions[i], questions[j]] = [questions[j], questions[i]];
+        }
+      }
 
       let pin: string;
       do {
