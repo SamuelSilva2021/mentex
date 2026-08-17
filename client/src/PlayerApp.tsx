@@ -8,7 +8,9 @@ import {
   Player 
 } from '../../shared/types';
 
-const SERVER_URL = `http://${window.location.hostname}:3001`;
+const SERVER_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
+  ? `http://${window.location.hostname}:3001` 
+  : 'https://mentex-mkii.onrender.com';
 const socket: Socket<ServerToClientEvents, ClientToServerEvents> = io(SERVER_URL);
 
 export default function PlayerApp() {

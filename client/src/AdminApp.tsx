@@ -2,6 +2,10 @@ import { useState, useEffect } from 'react';
 import { Play, Plus, Edit, Trash2, X } from 'lucide-react';
 import QuizEditor from './QuizEditor';
 
+const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+  ? `http://${window.location.hostname}:3001/api`
+  : 'https://mentex-mkii.onrender.com/api';
+
 export default function AdminApp() {
   const [quizzes, setQuizzes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -18,7 +22,7 @@ export default function AdminApp() {
 
   const fetchQuizzes = async () => {
     try {
-      const res = await fetch(`http://${window.location.hostname}:3001/api/quizzes`);
+      const res = await fetch(`${API_URL}/quizzes`);
       const data = await res.json();
       setQuizzes(data);
     } catch (e) {
@@ -38,7 +42,7 @@ export default function AdminApp() {
     if (!newQuizTitle.trim()) return;
 
     try {
-      await fetch(`http://${window.location.hostname}:3001/api/quizzes`, {
+      await fetch(`${API_URL}/quizzes`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ title: newQuizTitle, description: 'Descrição...' })
@@ -59,7 +63,7 @@ export default function AdminApp() {
   const deleteQuiz = async () => {
     if (quizToDelete === null) return;
     try {
-      await fetch(`http://${window.location.hostname}:3001/api/quizzes/${quizToDelete}`, { method: 'DELETE' });
+      await fetch(`${API_URL}/quizzes/${quizToDelete}`, { method: 'DELETE' });
       setIsDeleteModalOpen(false);
       setQuizToDelete(null);
       fetchQuizzes();
