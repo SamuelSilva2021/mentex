@@ -35,7 +35,7 @@ export interface Room {
   state: GameState;
   answers: Record<string, AnswerInfo>;
   questionStartTime?: number;
-  questionTimeout?: NodeJS.Timeout | null;
+  questionTimeout?: ReturnType<typeof setTimeout> | null;
 }
 
 // Client-to-Server Events
