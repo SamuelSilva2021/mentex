@@ -158,6 +158,108 @@ io.on('connection', (socket: Socket<ClientToServerEvents, ServerToClientEvents>)
     console.log(`Player ${nickname} joined room ${pin}`);
   });
 
+  // PLAYER reconnects to a room
+  socket.on('player:reconnect', ({ pin, nickname }) => {
+    const room = rooms[pin];
+    if (!room) {
+      return socket.emit('reconnect-error', 'Sala não encontrada');
+    }
+
+    const playerIndex = room.players.findIndex(p => p.nickname === nickname);
+    if (playerIndex === -1) {
+      return socket.emit('reconnect-error', 'Jogador não encontrado na sala');
+    }
+
+    const player = room.players[playerIndex];
+    const oldSocketId = player.id;
+    
+    // Update player ID to new socket
+    player.id = socket.id;
+
+    // Migrate previous answers to new socket ID
+    if (room.answers[oldSocketId]) {
+      room.answers[socket.id] = room.answers[oldSocketId];
+      delete room.answers[oldSocketId];
+    }
+
+    socket.join(pin);
+    socket.emit('join-success', { pin, nickname });
+    console.log(`Player ${nickname} reconnected to room ${pin}`);
+
+    // Immediately send them the current game state
+    if (room.state === 'LOBBY') {
+      socket.emit('game:state-update', { state: 'LOBBY' });
+    } else if (room.state === 'QUESTION_INTRO') {
+      const q = room.questions[room.currentQuestionIndex];
+      socket.emit('game:state-update', {
+        state: 'QUESTION_INTRO',
+        title: q.text,
+        questionNumber: room.currentQuestionIndex + 1,
+        totalQuestions: room.questions.length
+      });
+    } else if (room.state === 'QUESTION_ACTIVE') {
+      const q = room.questions[room.currentQuestionIndex];
+      socket.emit('game:state-update', {
+        state: 'QUESTION_ACTIVE',
+        question: {
+          text: q.text,
+          options: q.options,
+          timeLimit: q.timeLimit
+        }
+      });
+      // If they already answered, send them their result so the UI shows 'Aguardando...'
+      if (room.answers[socket.id]) {
+        const ans = room.answers[socket.id];
+        socket.emit('player:answer-result', {
+          isCorrect: ans.isCorrect,
+          pointsGained: ans.points,
+          totalScore: player.score,
+          streak: player.streak
+        });
+      }
+    } else if (room.state === 'REVEAL') {
+      const q = room.questions[room.currentQuestionIndex];
+      const distribution = [0, 0, 0, 0];
+      Object.values(room.answers).forEach((ans: any) => {
+        distribution[ans.answerIndex]++;
+      });
+      const sortedPlayers = [...room.players].sort((a, b) => b.score - a.score);
+      socket.emit('game:state-update', {
+        state: 'REVEAL',
+        correctIndex: q.correctIndex,
+        distribution,
+        leaderboard: sortedPlayers.slice(0, 5)
+      });
+      if (room.answers[socket.id]) {
+        const ans = room.answers[socket.id];
+        socket.emit('player:answer-result', {
+          isCorrect: ans.isCorrect,
+          pointsGained: ans.points,
+          totalScore: player.score,
+          streak: player.streak
+        });
+      }
+    } else if (room.state === 'LEADERBOARD') {
+      const sortedPlayers = [...room.players].sort((a, b) => b.score - a.score);
+      socket.emit('game:state-update', { state: 'LEADERBOARD', leaderboard: sortedPlayers.slice(0, 5) });
+      socket.emit('player:answer-result', {
+        isCorrect: false,
+        pointsGained: 0,
+        totalScore: player.score,
+        streak: player.streak
+      });
+    } else if (room.state === 'PODIUM') {
+      const sortedPlayers = [...room.players].sort((a, b) => b.score - a.score);
+      socket.emit('game:state-update', { state: 'PODIUM', podium: sortedPlayers.slice(0, 3) });
+      socket.emit('player:answer-result', {
+        isCorrect: false,
+        pointsGained: 0,
+        totalScore: player.score,
+        streak: player.streak
+      });
+    }
+  });
+
   // HOST starts the game
   socket.on('host:start-game', ({ pin }) => {
     const room = rooms[pin];

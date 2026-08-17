@@ -23,15 +23,46 @@ export default function PlayerApp() {
   const [submitted, setSubmitted] = useState<boolean>(false);
   const [questionData, setQuestionData] = useState<{text: string; options: string[]; timeLimit: number} | null>(null);
   const [leaderboard, setLeaderboard] = useState<Player[]>([]);
+  const [isReconnecting, setIsReconnecting] = useState<boolean>(true);
 
   useEffect(() => {
-    socket.on('join-success', () => {
+    // Check session storage for reconnect on mount
+    const savedSession = sessionStorage.getItem('mentex-session');
+    if (savedSession) {
+      try {
+        const { pin: savedPin, nickname: savedNickname } = JSON.parse(savedSession);
+        setPin(savedPin);
+        setNickname(savedNickname);
+        socket.emit('player:reconnect', { pin: savedPin, nickname: savedNickname });
+      } catch (e) {
+        setIsReconnecting(false);
+      }
+    } else {
+      setIsReconnecting(false);
+    }
+
+    socket.on('join-success', (data) => {
       setJoined(true);
       setError('');
+      setIsReconnecting(false);
+      // Save session
+      if (data && data.pin && data.nickname) {
+        sessionStorage.setItem('mentex-session', JSON.stringify({ pin: data.pin, nickname: data.nickname }));
+      } else {
+        sessionStorage.setItem('mentex-session', JSON.stringify({ pin, nickname }));
+      }
+    });
+
+    socket.on('reconnect-error', (msg) => {
+      sessionStorage.removeItem('mentex-session');
+      setIsReconnecting(false);
+      setError(msg);
+      setJoined(false);
     });
 
     socket.on('error', (msg) => {
       setError(msg);
+      setIsReconnecting(false);
     });
 
     socket.on('game:state-update', (data) => {
@@ -53,10 +84,12 @@ export default function PlayerApp() {
 
     socket.on('player:answer-result', (data) => {
       setAnswerResult(data);
+      setSubmitted(true); // If reconnecting, this ensures we mark them as having answered
     });
 
     return () => {
       socket.off('join-success');
+      socket.off('reconnect-error');
       socket.off('error');
       socket.off('game:state-update');
       socket.off('player:answer-result');
@@ -81,6 +114,15 @@ export default function PlayerApp() {
   const shadows = ['shadow-red-500/50', 'shadow-blue-500/50', 'shadow-yellow-500/50', 'shadow-green-500/50'];
   const activeColors = ['active:bg-red-600', 'active:bg-blue-600', 'active:bg-yellow-600', 'active:bg-green-600'];
   const Icons = [Triangle, Diamond, Circle, Square];
+
+  if (isReconnecting) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-indigo-900 to-slate-900 flex flex-col items-center justify-center p-6 text-white text-center">
+        <div className="w-16 h-16 border-4 border-indigo-400 border-t-transparent rounded-full animate-spin mb-6"></div>
+        <h2 className="text-2xl font-black animate-pulse">Reconectando...</h2>
+      </div>
+    );
+  }
 
   if (joined) {
     if (gameState === 'LOBBY') {
