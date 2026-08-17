@@ -97,11 +97,11 @@ export default function HostApp() {
 
   const selectQuiz = (id: number) => {
     setSelectedQuiz(id);
-    socket.emit('host:create-room', { quizId: id, randomize });
+    socket.emit('host:create-room', { quizId: id });
   };
 
   const startGame = () => {
-    if (pin) socket.emit('host:start-game', { pin });
+    if (pin) socket.emit('host:start-game', { pin, randomize });
   };
 
   const nextState = () => {
@@ -138,20 +138,7 @@ export default function HostApp() {
       {!selectedQuiz && gameState === 'LOBBY' && (
         <main className="flex-1 flex flex-col items-center p-12 overflow-y-auto">
           <h1 className="text-5xl font-black text-indigo-400 mb-2">MenteX</h1>
-          <h2 className="text-xl text-slate-400 mb-8">Selecione um Quiz para ser o Host:</h2>
-          
-          <div className="mb-8 flex items-center gap-3 bg-slate-800 p-4 rounded-xl border border-slate-700 shadow-lg hover:border-indigo-500/50 transition-colors cursor-pointer" onClick={() => setRandomize(!randomize)}>
-            <input 
-              type="checkbox" 
-              id="randomize" 
-              checked={randomize} 
-              onChange={(e) => setRandomize(e.target.checked)}
-              className="w-5 h-5 accent-indigo-500 cursor-pointer pointer-events-none"
-            />
-            <label htmlFor="randomize" className="text-lg text-slate-200 cursor-pointer select-none pointer-events-none font-medium">
-              Aleatorizar ordem das questões
-            </label>
-          </div>
+          <h2 className="text-xl text-slate-400 mb-12">Selecione um Quiz para ser o Host:</h2>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-6xl">
             {quizzes.map(q => (
@@ -186,6 +173,15 @@ export default function HostApp() {
               MenteX <span className="text-white/60 font-normal text-lg md:text-xl">/ Host</span>
             </h1>
             <div className="flex items-center gap-3 md:gap-4">
+              <label className="flex items-center gap-2 text-white/80 cursor-pointer bg-white/10 px-3 py-2 rounded-xl border border-white/20 hover:bg-white/20 transition-colors">
+                <input 
+                  type="checkbox" 
+                  checked={randomize}
+                  onChange={(e) => setRandomize(e.target.checked)}
+                  className="w-4 h-4 accent-indigo-500 cursor-pointer"
+                />
+                <span className="font-medium text-sm md:text-base whitespace-nowrap">Aleatorizar</span>
+              </label>
               <div className="bg-white/10 backdrop-blur-md px-4 py-2 rounded-xl flex items-center gap-2 border border-white/20">
                 <Users size={20} className="text-white/80" />
                 <span className="font-bold text-lg">{players.length}</span>

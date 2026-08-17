@@ -40,8 +40,8 @@ export interface Room {
 
 // Client-to-Server Events
 export interface ClientToServerEvents {
-  'host:create-room': (data: { quizId: number; randomize?: boolean }) => void;
-  'host:start-game': (data: { pin: string }) => void;
+  'host:create-room': (data: { quizId: number }) => void;
+  'host:start-game': (data: { pin: string; randomize?: boolean }) => void;
   'host:next': (data: { pin: string }) => void;
   'player:join': (data: { pin: string; nickname: string }) => void;
   'player:submit-answer': (data: { pin: string; answerIndex: number }) => void;

@@ -100,7 +100,7 @@ io.on('connection', (socket: Socket<ClientToServerEvents, ServerToClientEvents>)
   console.log('A user connected:', socket.id);
 
   // HOST creates a room
-  socket.on('host:create-room', async ({ quizId, randomize }) => {
+  socket.on('host:create-room', async ({ quizId }) => {
     try {
       const quiz = await prisma.quiz.findUnique({
         where: { id: quizId },
@@ -115,13 +115,6 @@ io.on('connection', (socket: Socket<ClientToServerEvents, ServerToClientEvents>)
         correctIndex: q.correctIndex,
         timeLimit: q.timeLimit
       }));
-
-      if (randomize) {
-        for (let i = questions.length - 1; i > 0; i--) {
-          const j = Math.floor(Math.random() * (i + 1));
-          [questions[i], questions[j]] = [questions[j], questions[i]];
-        }
-      }
 
       let pin: string;
       do {
@@ -336,9 +329,15 @@ io.on('connection', (socket: Socket<ClientToServerEvents, ServerToClientEvents>)
   });
 
   // HOST starts the game
-  socket.on('host:start-game', ({ pin }) => {
+  socket.on('host:start-game', ({ pin, randomize }) => {
     const room = rooms[pin];
     if (room && room.hostId === socket.id && room.state === 'LOBBY') {
+      if (randomize) {
+        for (let i = room.questions.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [room.questions[i], room.questions[j]] = [room.questions[j], room.questions[i]];
+        }
+      }
       room.currentQuestionIndex = 0;
       startQuestion(pin, room);
     }
