@@ -87,12 +87,22 @@ export default function PlayerApp() {
       setSubmitted(true); // If reconnecting, this ensures we mark them as having answered
     });
 
+    socket.on('game:ended', () => {
+      sessionStorage.removeItem('mentex-session');
+      setJoined(false);
+      setGameState('LOBBY');
+      setPin('');
+      setNickname('');
+      setError('O host encerrou a partida.');
+    });
+
     return () => {
       socket.off('join-success');
       socket.off('reconnect-error');
       socket.off('error');
       socket.off('game:state-update');
       socket.off('player:answer-result');
+      socket.off('game:ended');
     };
   }, []);
 

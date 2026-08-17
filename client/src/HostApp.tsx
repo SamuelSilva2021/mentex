@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { io, Socket } from 'socket.io-client';
-import { Users, Play, ArrowLeft, Triangle, Diamond, Circle, Square } from 'lucide-react';
+import { Users, Play, ArrowLeft, Triangle, Diamond, Circle, Square, LogOut } from 'lucide-react';
 import { 
   ServerToClientEvents, 
   ClientToServerEvents, 
@@ -24,13 +24,32 @@ export default function HostApp() {
   
   const [quizzes, setQuizzes] = useState<any[]>([]);
   const [selectedQuiz, setSelectedQuiz] = useState<number | null>(null);
+  const [isReconnecting, setIsReconnecting] = useState<boolean>(true);
 
   useEffect(() => {
     fetch(`${SERVER_URL}/api/quizzes`)
       .then(res => res.json())
       .then(data => setQuizzes(data));
 
-    socket.on('room-created', (data) => setPin(data.pin));
+    const savedPin = sessionStorage.getItem('mentex-host-session');
+    if (savedPin) {
+      socket.emit('host:reconnect', { pin: savedPin });
+    } else {
+      setIsReconnecting(false);
+    }
+
+    socket.on('room-created', (data) => {
+      setPin(data.pin);
+      sessionStorage.setItem('mentex-host-session', data.pin);
+      setSelectedQuiz(-1); // bypass quiz selection
+      setIsReconnecting(false);
+    });
+
+    socket.on('error', () => {
+      sessionStorage.removeItem('mentex-host-session');
+      setIsReconnecting(false);
+    });
+
     socket.on('player-joined', (updatedPlayers) => setPlayers(updatedPlayers));
     
     socket.on('game:state-update', (data) => {
@@ -62,6 +81,7 @@ export default function HostApp() {
 
     return () => {
       socket.off('room-created');
+      socket.off('error');
       socket.off('player-joined');
       socket.off('game:state-update');
     };
@@ -87,9 +107,29 @@ export default function HostApp() {
     if (pin) socket.emit('host:next', { pin });
   };
 
+  const endGame = () => {
+    if (pin) {
+      socket.emit('host:end-game', { pin });
+      sessionStorage.removeItem('mentex-host-session');
+      setPin(null);
+      setSelectedQuiz(null);
+      setGameState('LOBBY');
+      setPlayers([]);
+    }
+  };
+
   const colors = ['bg-red-500', 'bg-blue-500', 'bg-yellow-500', 'bg-green-500'];
   const shadows = ['shadow-red-500/50', 'shadow-blue-500/50', 'shadow-yellow-500/50', 'shadow-green-500/50'];
   const Icons = [Triangle, Diamond, Circle, Square];
+
+  if (isReconnecting) {
+    return (
+      <div className="h-[100dvh] w-screen bg-slate-900 flex flex-col items-center justify-center p-6 text-white text-center">
+        <div className="w-16 h-16 border-4 border-indigo-400 border-t-transparent rounded-full animate-spin mb-6"></div>
+        <h2 className="text-2xl font-black animate-pulse">Reconectando sala...</h2>
+      </div>
+    );
+  }
 
   return (
     <div className="h-[100dvh] w-screen flex flex-col bg-slate-900 text-white font-sans overflow-hidden">
@@ -125,7 +165,10 @@ export default function HostApp() {
       {selectedQuiz && gameState === 'LOBBY' && (
         <div className="flex-1 flex flex-col bg-gradient-to-br from-indigo-900 via-purple-900 to-slate-900 relative h-full">
           <header className="p-4 md:p-6 flex justify-between items-center bg-black/20 backdrop-blur-md z-10 border-b border-white/10 shrink-0">
-            <h1 className="text-2xl md:text-3xl font-black tracking-tight text-white drop-shadow-md">
+            <h1 className="text-2xl md:text-3xl font-black tracking-tight text-white drop-shadow-md flex items-center gap-4">
+              <button onClick={endGame} className="text-white/60 hover:text-red-400 transition-colors" title="Encerrar Jogo">
+                <LogOut size={28} />
+              </button>
               MenteX <span className="text-white/60 font-normal text-lg md:text-xl">/ Host</span>
             </h1>
             <div className="flex items-center gap-3 md:gap-4">
@@ -218,14 +261,16 @@ export default function HostApp() {
               return (
                 <div key={i} className={`flex flex-col items-center w-40 gap-4 transition-all duration-1000 ${isCorrect ? 'scale-110' : 'opacity-40 grayscale'}`}>
                   <span className={`text-5xl font-black ${isCorrect ? 'text-green-600' : 'text-slate-500'}`}>{count}</span>
-                  <div 
-                    className={`w-full rounded-t-2xl transition-all duration-1000 ${colors[i]} shadow-2xl relative overflow-hidden`}
-                    style={{ height: `${count === 0 ? 30 : count * 80}px`, minHeight: '30px' }}
-                  >
-                    <div className="absolute inset-0 bg-gradient-to-b from-white/20 to-transparent"></div>
-                  </div>
-                  <div className={`w-full h-20 ${colors[i]} rounded-b-2xl flex items-center justify-center border-b-[6px] border-black/20 shadow-xl relative z-10`}>
-                    <Icon size={40} className="text-white drop-shadow-md" fill="currentColor" />
+                  <div className="w-full flex flex-col">
+                    <div 
+                      className={`w-full rounded-t-2xl transition-all duration-1000 ${colors[i]} shadow-2xl relative overflow-hidden`}
+                      style={{ height: `${count === 0 ? 30 : count * 80}px`, minHeight: '30px' }}
+                    >
+                      <div className="absolute inset-0 bg-gradient-to-b from-white/20 to-transparent"></div>
+                    </div>
+                    <div className={`w-full h-20 ${colors[i]} rounded-b-2xl flex items-center justify-center border-b-[6px] border-black/20 shadow-xl relative z-10`}>
+                      <Icon size={40} className="text-white drop-shadow-md" fill="currentColor" />
+                    </div>
                   </div>
                 </div>
               );

@@ -260,6 +260,74 @@ io.on('connection', (socket: Socket<ClientToServerEvents, ServerToClientEvents>)
     }
   });
 
+  // HOST reconnects
+  socket.on('host:reconnect', ({ pin }) => {
+    const room = rooms[pin];
+    if (!room) {
+      return socket.emit('error', 'Sala não encontrada');
+    }
+    
+    // Update host ID
+    room.hostId = socket.id;
+    socket.join(pin);
+    
+    socket.emit('room-created', { pin });
+    socket.emit('player-joined', room.players);
+    console.log(`Host reconnected to room ${pin}`);
+
+    if (room.state === 'LOBBY') {
+      socket.emit('game:state-update', { state: 'LOBBY' });
+    } else if (room.state === 'QUESTION_INTRO') {
+      const q = room.questions[room.currentQuestionIndex];
+      socket.emit('game:state-update', {
+        state: 'QUESTION_INTRO',
+        title: q.text,
+        questionNumber: room.currentQuestionIndex + 1,
+        totalQuestions: room.questions.length
+      });
+    } else if (room.state === 'QUESTION_ACTIVE') {
+      const q = room.questions[room.currentQuestionIndex];
+      socket.emit('game:state-update', {
+        state: 'QUESTION_ACTIVE',
+        question: {
+          text: q.text,
+          options: q.options,
+          timeLimit: q.timeLimit
+        }
+      });
+    } else if (room.state === 'REVEAL') {
+      const q = room.questions[room.currentQuestionIndex];
+      const distribution = [0, 0, 0, 0];
+      Object.values(room.answers).forEach((ans: any) => {
+        distribution[ans.answerIndex]++;
+      });
+      const sortedPlayers = [...room.players].sort((a, b) => b.score - a.score);
+      socket.emit('game:state-update', {
+        state: 'REVEAL',
+        correctIndex: q.correctIndex,
+        distribution,
+        leaderboard: sortedPlayers.slice(0, 5)
+      });
+    } else if (room.state === 'LEADERBOARD') {
+      const sortedPlayers = [...room.players].sort((a, b) => b.score - a.score);
+      socket.emit('game:state-update', { state: 'LEADERBOARD', leaderboard: sortedPlayers.slice(0, 5) });
+    } else if (room.state === 'PODIUM') {
+      const sortedPlayers = [...room.players].sort((a, b) => b.score - a.score);
+      socket.emit('game:state-update', { state: 'PODIUM', podium: sortedPlayers.slice(0, 3) });
+    }
+  });
+
+  // HOST ends the game manually
+  socket.on('host:end-game', ({ pin }) => {
+    const room = rooms[pin];
+    if (room && room.hostId === socket.id) {
+      io.to(pin).emit('game:ended');
+      if (room.questionTimeout) clearTimeout(room.questionTimeout);
+      delete rooms[pin];
+      console.log(`Room ${pin} ended by host`);
+    }
+  });
+
   // HOST starts the game
   socket.on('host:start-game', ({ pin }) => {
     const room = rooms[pin];

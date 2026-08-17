@@ -45,6 +45,9 @@ export interface ClientToServerEvents {
   'host:next': (data: { pin: string }) => void;
   'player:join': (data: { pin: string; nickname: string }) => void;
   'player:submit-answer': (data: { pin: string; answerIndex: number }) => void;
+  'player:reconnect': (data: { pin: string; nickname: string }) => void;
+  'host:reconnect': (data: { pin: string }) => void;
+  'host:end-game': (data: { pin: string }) => void;
 }
 
 // Server-to-Client Events
@@ -53,8 +56,10 @@ export interface ServerToClientEvents {
   'player-joined': (players: Player[]) => void;
   'join-success': (data: { pin: string; nickname: string }) => void;
   'error': (message: string) => void;
+  'reconnect-error': (message: string) => void;
   'game:state-update': (data: GameStateUpdatePayload) => void;
   'player:answer-result': (data: { isCorrect: boolean; pointsGained: number; totalScore: number; streak: number }) => void;
+  'game:ended': () => void;
 }
 
 export type GameStateUpdatePayload = 
