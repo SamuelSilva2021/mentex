@@ -8,7 +8,8 @@ import {
   Player 
 } from '../../shared/types';
 
-const socket: Socket<ServerToClientEvents, ClientToServerEvents> = io('http://localhost:3001');
+const SERVER_URL = `http://${window.location.hostname}:3001`;
+const socket: Socket<ServerToClientEvents, ClientToServerEvents> = io(SERVER_URL);
 
 export default function PlayerApp() {
   const [pin, setPin] = useState<string>('');

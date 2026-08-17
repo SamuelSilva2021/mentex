@@ -18,7 +18,7 @@ export default function AdminApp() {
 
   const fetchQuizzes = async () => {
     try {
-      const res = await fetch('http://localhost:3001/api/quizzes');
+      const res = await fetch(`http://${window.location.hostname}:3001/api/quizzes`);
       const data = await res.json();
       setQuizzes(data);
     } catch (e) {
@@ -38,7 +38,7 @@ export default function AdminApp() {
     if (!newQuizTitle.trim()) return;
 
     try {
-      await fetch('http://localhost:3001/api/quizzes', {
+      await fetch(`http://${window.location.hostname}:3001/api/quizzes`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ title: newQuizTitle, description: 'Descrição...' })
@@ -59,7 +59,7 @@ export default function AdminApp() {
   const deleteQuiz = async () => {
     if (quizToDelete === null) return;
     try {
-      await fetch(`http://localhost:3001/api/quizzes/${quizToDelete}`, { method: 'DELETE' });
+      await fetch(`http://${window.location.hostname}:3001/api/quizzes/${quizToDelete}`, { method: 'DELETE' });
       setIsDeleteModalOpen(false);
       setQuizToDelete(null);
       fetchQuizzes();
