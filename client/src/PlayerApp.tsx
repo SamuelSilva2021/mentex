@@ -106,7 +106,7 @@ export default function PlayerApp() {
       );
     }
 
-    if (gameState === 'QUESTION_ACTIVE') {
+    if (gameState === 'QUESTION_ACTIVE' && questionData && questionData.options) {
       if (submitted) {
         return (
           <div className="min-h-screen bg-slate-800 flex flex-col items-center justify-center p-6 text-white text-center">
@@ -117,17 +117,23 @@ export default function PlayerApp() {
       }
 
       return (
-        <div className="min-h-screen flex flex-col p-2 bg-slate-100">
-          <div className="flex-1 grid grid-cols-2 grid-rows-2 gap-2">
-            {colors.map((color, index) => {
+        <div className="min-h-screen flex flex-col p-3 md:p-6 bg-slate-100">
+          <div className="text-xl md:text-2xl font-bold mb-4 bg-white p-4 rounded-2xl shadow-sm text-slate-800 text-center border-b-4 border-slate-200">
+            {questionData.text}
+          </div>
+          <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
+            {questionData.options.map((opt, index) => {
               const Icon = Icons[index];
               return (
                 <button 
                   key={index}
                   onClick={() => submitAnswer(index)}
-                  className={`${color} ${activeColors[index]} ${shadows[index]} rounded-xl shadow-xl active:scale-95 transition-all flex items-center justify-center p-4 border-b-[8px] border-black/20`}
+                  className={`${colors[index]} ${activeColors[index]} ${shadows[index]} rounded-2xl shadow-[0_8px_20px_rgb(0,0,0,0.15)] active:scale-[0.98] transition-all flex items-center justify-start p-4 md:p-6 border-b-[6px] border-black/20`}
                 >
-                  <Icon size={100} className="text-white drop-shadow-md" fill="currentColor" />
+                  <div className="bg-black/10 p-3 md:p-4 rounded-xl mr-4 shrink-0">
+                    <Icon size={28} className="text-white drop-shadow-md" fill="currentColor" />
+                  </div>
+                  <span className="text-xl md:text-2xl font-bold text-white drop-shadow-md break-words text-left">{opt}</span>
                 </button>
               );
             })}
