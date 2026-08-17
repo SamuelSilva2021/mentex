@@ -26,7 +26,7 @@ export default function HostApp() {
   const [selectedQuiz, setSelectedQuiz] = useState<number | null>(null);
 
   useEffect(() => {
-    fetch('http://localhost:3001/api/quizzes')
+    fetch(`${SERVER_URL}/api/quizzes`)
       .then(res => res.json())
       .then(data => setQuizzes(data));
 
