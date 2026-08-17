@@ -268,6 +268,8 @@ export default function PlayerApp() {
           <div className="space-y-4">
             <input
               type="text"
+              inputMode="numeric"
+              pattern="[0-9]*"
               placeholder="PIN do Jogo"
               className="w-full text-center text-3xl font-black px-4 py-4 rounded-2xl bg-white/90 text-slate-800 focus:bg-white focus:outline-none focus:ring-4 ring-indigo-400 transition-all shadow-inner placeholder:text-slate-400 placeholder:font-bold"
               value={pin}
