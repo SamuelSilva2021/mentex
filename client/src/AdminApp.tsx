@@ -160,36 +160,36 @@ export default function AdminApp() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-900 text-white font-sans p-8">
+    <div className="min-h-screen bg-slate-900 text-white font-sans p-4 sm:p-6 md:p-8">
       <div className="max-w-4xl mx-auto">
         {/* Top Header */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-10 pb-6 border-b border-slate-800">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 sm:mb-10 pb-4 sm:pb-6 border-b border-slate-800">
           <div>
             <div className="flex items-center gap-3">
-              <h1 className="text-4xl font-black text-indigo-400">MenteX <span className="text-white">Admin</span></h1>
+              <h1 className="text-2xl sm:text-4xl font-black text-indigo-400">MenteX <span className="text-white">Admin</span></h1>
               <span className="bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-xs px-2.5 py-1 rounded-full font-bold uppercase">
                 Painel
               </span>
             </div>
-            <p className="text-slate-400 mt-1">Gerencie seus quizzes e perguntas exclusivas</p>
+            <p className="text-slate-400 text-xs sm:text-sm mt-1">Gerencie seus quizzes e perguntas exclusivas</p>
           </div>
 
           {/* User Profile & Actions */}
-          <div className="flex items-center gap-3 self-end md:self-auto">
-            <div className="bg-slate-800/90 border border-slate-700 px-4 py-2 rounded-xl flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-indigo-600/30 text-indigo-400 flex items-center justify-center font-bold text-sm border border-indigo-500/30">
+          <div className="flex items-center justify-between sm:justify-start w-full sm:w-auto gap-2 sm:gap-3">
+            <div className="bg-slate-800/90 border border-slate-700 px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl flex items-center gap-2.5 sm:gap-3 flex-1 sm:flex-initial">
+              <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-indigo-600/30 text-indigo-400 flex items-center justify-center font-bold text-xs sm:text-sm border border-indigo-500/30 shrink-0">
                 {user?.name ? user.name.charAt(0).toUpperCase() : user?.email?.charAt(0).toUpperCase() || 'U'}
               </div>
-              <div className="text-left">
-                <div className="text-sm font-bold text-slate-200">{user?.name || 'Usuário'}</div>
-                <div className="text-xs text-slate-400">{user?.email}</div>
+              <div className="text-left truncate">
+                <div className="text-xs sm:text-sm font-bold text-slate-200 truncate">{user?.name || 'Usuário'}</div>
+                <div className="text-[10px] sm:text-xs text-slate-400 truncate">{user?.email}</div>
               </div>
             </div>
 
             <button 
               onClick={handleLogout}
               title="Sair da Conta"
-              className="bg-slate-800 hover:bg-red-500/20 hover:text-red-400 text-slate-400 border border-slate-700 p-3 rounded-xl transition-all"
+              className="bg-slate-800 hover:bg-red-500/20 hover:text-red-400 text-slate-400 border border-slate-700 p-2.5 sm:p-3 rounded-xl transition-all shrink-0"
             >
               <LogOut size={18} />
             </button>
@@ -197,24 +197,24 @@ export default function AdminApp() {
         </div>
 
         {/* Action Bar */}
-        <div className="flex justify-between items-center mb-8">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4 mb-6 sm:mb-8">
           <div>
-            <h2 className="text-2xl font-bold text-white">Meus Quizzes</h2>
-            <p className="text-slate-400 text-sm">{quizzes.length} quiz(zes) cadastrados na sua conta</p>
+            <h2 className="text-xl sm:text-2xl font-bold text-white">Meus Quizzes</h2>
+            <p className="text-slate-400 text-xs sm:text-sm">{quizzes.length} quiz(zes) cadastrados na sua conta</p>
           </div>
 
-          <div className="flex gap-3">
+          <div className="flex w-full sm:w-auto gap-2 sm:gap-3">
             <a 
               href="/host" 
-              className="bg-slate-800 hover:bg-slate-700 border border-slate-700 px-4 py-3 rounded-xl font-bold flex items-center gap-2 text-slate-300 transition-colors"
+              className="flex-1 sm:flex-initial bg-slate-800 hover:bg-slate-700 border border-slate-700 px-3.5 py-2.5 sm:px-4 sm:py-3 rounded-xl font-bold flex items-center justify-center gap-2 text-xs sm:text-sm text-slate-300 transition-colors"
             >
-              <Play size={18} className="text-green-400" /> Ir para Host
+              <Play size={16} className="text-green-400" /> Ir para Host
             </a>
             <button 
               onClick={openCreateModal}
-              className="bg-indigo-600 hover:bg-indigo-500 px-6 py-3 rounded-xl font-bold flex items-center gap-2 transition-all shadow-lg shadow-indigo-600/20"
+              className="flex-1 sm:flex-initial bg-indigo-600 hover:bg-indigo-500 px-4 py-2.5 sm:px-6 sm:py-3 rounded-xl font-bold flex items-center justify-center gap-2 text-xs sm:text-sm transition-all shadow-lg shadow-indigo-600/20"
             >
-              <Plus size={20} /> Novo Quiz
+              <Plus size={18} /> Novo Quiz
             </button>
           </div>
         </div>
@@ -225,23 +225,23 @@ export default function AdminApp() {
             Carregando seus quizzes...
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
             {quizzes.map(quiz => (
-              <div key={quiz.id} className="bg-slate-800 p-6 rounded-2xl border border-slate-700 hover:border-indigo-500 transition-colors flex flex-col justify-between shadow-lg">
+              <div key={quiz.id} className="bg-slate-800 p-5 sm:p-6 rounded-2xl border border-slate-700 hover:border-indigo-500 transition-colors flex flex-col justify-between shadow-lg">
                 <div>
-                  <h3 className="text-2xl font-bold mb-1 text-white">{quiz.title}</h3>
+                  <h3 className="text-xl sm:text-2xl font-bold mb-1 text-white">{quiz.title}</h3>
                   {quiz.description && (
-                    <p className="text-slate-300 text-sm mb-3 line-clamp-2">{quiz.description}</p>
+                    <p className="text-slate-300 text-xs sm:text-sm mb-3 line-clamp-2">{quiz.description}</p>
                   )}
-                  <p className="text-slate-400 text-sm mb-6 font-medium">{quiz.questions?.length || 0} perguntas</p>
+                  <p className="text-slate-400 text-xs sm:text-sm mb-4 sm:mb-6 font-medium">{quiz.questions?.length || 0} perguntas</p>
                 </div>
                 
-                <div className="flex gap-3">
-                  <button onClick={() => setEditingQuizId(quiz.id)} className="flex-1 bg-slate-700 hover:bg-slate-600 py-2.5 rounded-xl font-medium flex items-center justify-center gap-2 transition-colors">
-                    <Edit size={18} /> Editar Perguntas
+                <div className="flex gap-2 sm:gap-3">
+                  <button onClick={() => setEditingQuizId(quiz.id)} className="flex-1 bg-slate-700 hover:bg-slate-600 py-2.5 rounded-xl font-medium text-xs sm:text-sm flex items-center justify-center gap-2 transition-colors">
+                    <Edit size={16} /> Editar Perguntas
                   </button>
-                  <button onClick={() => confirmDelete(quiz.id)} className="bg-red-500/20 text-red-400 hover:bg-red-500 hover:text-white p-2.5 rounded-xl transition-colors">
-                    <Trash2 size={18} />
+                  <button onClick={() => confirmDelete(quiz.id)} className="bg-red-500/20 text-red-400 hover:bg-red-500 hover:text-white p-2.5 rounded-xl transition-colors shrink-0">
+                    <Trash2 size={16} />
                   </button>
                 </div>
               </div>
