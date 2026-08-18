@@ -43,6 +43,7 @@ export interface ClientToServerEvents {
   'host:create-room': (data: { quizId: number }) => void;
   'host:start-game': (data: { pin: string; randomize?: boolean }) => void;
   'host:next': (data: { pin: string }) => void;
+  'host:force-podium': (data: { pin: string }) => void;
   'player:join': (data: { pin: string; nickname: string }) => void;
   'player:submit-answer': (data: { pin: string; answerIndex: number }) => void;
   'player:reconnect': (data: { pin: string; nickname: string }) => void;

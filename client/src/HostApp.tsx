@@ -294,9 +294,14 @@ export default function HostApp() {
           <div className="absolute inset-0 bg-gradient-to-b from-indigo-900/80 to-slate-900/95 pointer-events-none"></div>
           <div className="flex justify-between items-center w-full max-w-5xl mb-12 z-10">
             <h1 className="text-6xl font-black text-white drop-shadow-[0_0_20px_rgba(255,255,255,0.3)]">Placar</h1>
-            <button onClick={nextState} className="bg-white text-indigo-900 px-10 py-5 rounded-3xl font-black text-2xl hover:bg-slate-100 shadow-[0_10px_30px_rgba(0,0,0,0.3)] border-b-4 border-slate-300 transition-transform hover:scale-105">
-              Próximo ❯
-            </button>
+            <div className="flex gap-4">
+              <button onClick={() => { if (pin) socket.emit('host:force-podium', { pin }) }} className="bg-red-500 text-white px-8 py-5 rounded-3xl font-black text-xl hover:bg-red-400 shadow-[0_10px_30px_rgba(239,68,68,0.3)] border-b-4 border-red-700 transition-transform hover:scale-105">
+                Encerrar Jogo
+              </button>
+              <button onClick={nextState} className="bg-white text-indigo-900 px-10 py-5 rounded-3xl font-black text-2xl hover:bg-slate-100 shadow-[0_10px_30px_rgba(0,0,0,0.3)] border-b-4 border-slate-300 transition-transform hover:scale-105">
+                Próximo ❯
+              </button>
+            </div>
           </div>
           <div className="w-full max-w-5xl space-y-4 z-10">
             {leaderboard.map((p, i) => (
@@ -316,9 +321,13 @@ export default function HostApp() {
         <main className="flex-1 flex flex-col items-center justify-center p-8 bg-gradient-to-b from-indigo-900 via-purple-900 to-slate-900 relative overflow-hidden">
           <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-50 pointer-events-none"></div>
           
-          <h1 className="text-[8rem] font-black mb-24 text-transparent bg-clip-text bg-gradient-to-b from-yellow-200 to-yellow-500 drop-shadow-[0_0_40px_rgba(250,204,21,0.6)] animate-bounce z-10">
+          <h1 className="text-[8rem] font-black mb-12 text-transparent bg-clip-text bg-gradient-to-b from-yellow-200 to-yellow-500 drop-shadow-[0_0_40px_rgba(250,204,21,0.6)] animate-bounce z-10">
             PÓDIO
           </h1>
+          
+          <button onClick={endGame} className="absolute top-8 right-8 bg-white/10 hover:bg-red-500/80 text-white px-6 py-3 rounded-2xl font-bold transition-all z-20 border border-white/20 hover:border-red-500 shadow-lg">
+            Sair e Fechar Sala
+          </button>
           
           <div className="flex items-end justify-center gap-6 h-[500px] w-full max-w-5xl z-10">
             {/* 2nd Place */}

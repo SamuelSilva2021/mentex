@@ -366,6 +366,17 @@ io.on('connection', (socket: Socket<ClientToServerEvents, ServerToClientEvents>)
     }
   });
 
+  // HOST forces game to end and go to podium
+  socket.on('host:force-podium', ({ pin }) => {
+    const room = rooms[pin];
+    if (!room || room.hostId !== socket.id) return;
+    
+    room.state = 'PODIUM';
+    if (room.questionTimeout) clearTimeout(room.questionTimeout);
+    const sortedPlayers = [...room.players].sort((a, b) => b.score - a.score);
+    io.to(pin).emit('game:state-update', { state: 'PODIUM', podium: sortedPlayers.slice(0, 3) });
+  });
+
   // PLAYER submits answer
   socket.on('player:submit-answer', ({ pin, answerIndex }) => {
     const room = rooms[pin];
