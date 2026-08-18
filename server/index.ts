@@ -12,18 +12,23 @@ import {
 } from '../shared/types.js';
 
 import { PrismaClient } from '@prisma/client';
-import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3';
+import { PrismaPg } from '@prisma/adapter-pg';
+import pg from 'pg';
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-const adapter = new PrismaBetterSqlite3({ url: process.env.DATABASE_URL! });
+const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
+const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
 
 // API Endpoints
 app.get('/api/quizzes', async (req, res) => {
-  const quizzes = await prisma.quiz.findMany({ include: { questions: true } });
+  const quizzes = await prisma.quiz.findMany({ 
+    include: { questions: true },
+    orderBy: { id: 'asc' }
+  });
   // parse JSON options
   const formatted = quizzes.map((q: any) => ({
     ...q,
@@ -38,37 +43,45 @@ app.get('/api/quizzes', async (req, res) => {
 app.post('/api/quizzes', async (req, res) => {
   const { title, description } = req.body;
   const quiz = await prisma.quiz.create({
-    data: { title, description }
+    data: { 
+      title, 
+      description: description ?? null 
+    }
   });
   res.json(quiz);
 });
+
 app.put('/api/quizzes/:id', async (req, res) => {
   const { title, description, questions } = req.body;
   const quizId = parseInt(req.params.id);
 
   try {
-    await prisma.question.deleteMany({ where: { quizId } });
-    
+    const updateData: any = {
+      title,
+      description: description !== undefined ? description : null,
+    };
+
+    if (questions && Array.isArray(questions)) {
+      await prisma.question.deleteMany({ where: { quizId } });
+      updateData.questions = {
+        create: questions.map((q: any) => ({
+          text: q.text,
+          options: JSON.stringify(q.options),
+          correctIndex: q.correctIndex,
+          timeLimit: q.timeLimit || 20
+        }))
+      };
+    }
+
     const updatedQuiz = await prisma.quiz.update({
       where: { id: quizId },
-      data: {
-        title,
-        description,
-        questions: {
-          create: questions.map((q: any) => ({
-            text: q.text,
-            options: JSON.stringify(q.options),
-            correctIndex: q.correctIndex,
-            timeLimit: q.timeLimit
-          }))
-        }
-      },
+      data: updateData,
       include: { questions: true }
     });
 
     res.json(updatedQuiz);
   } catch (e) {
-    console.error(e);
+    console.error('Error updating quiz:', e);
     res.status(500).json({ error: 'Failed to update quiz' });
   }
 });

@@ -26,15 +26,21 @@ export default function QuizEditor({ quiz, onClose, onSave }: { quiz: any, onClo
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      await fetch(`${API_URL}/quizzes/${quiz.id}`, {
+      const res = await fetch(`${API_URL}/quizzes/${quiz.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ title, description, questions })
       });
+
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.error || `Erro HTTP ${res.status}`);
+      }
+
       onSave(); // notify parent to refresh and close
-    } catch (e) {
-      console.error(e);
-      alert('Erro ao salvar quiz.');
+    } catch (e: any) {
+      console.error('Erro ao salvar quiz:', e);
+      alert(`Erro ao salvar quiz: ${e.message || 'Verifique sua conexão.'}`);
     } finally {
       setIsSaving(false);
     }

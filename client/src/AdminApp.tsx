@@ -11,6 +11,7 @@ export default function AdminApp() {
   const [loading, setLoading] = useState(true);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [newQuizTitle, setNewQuizTitle] = useState('');
+  const [newQuizDescription, setNewQuizDescription] = useState('');
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [quizToDelete, setQuizToDelete] = useState<number | null>(null);
   const [editingQuizId, setEditingQuizId] = useState<number | null>(null);
@@ -34,6 +35,7 @@ export default function AdminApp() {
 
   const openCreateModal = () => {
     setNewQuizTitle('');
+    setNewQuizDescription('');
     setIsCreateModalOpen(true);
   };
 
@@ -42,16 +44,22 @@ export default function AdminApp() {
     if (!newQuizTitle.trim()) return;
 
     try {
-      await fetch(`${API_URL}/quizzes`, {
+      const res = await fetch(`${API_URL}/quizzes`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: newQuizTitle, description: 'Descrição...' })
+        body: JSON.stringify({ 
+          title: newQuizTitle.trim(), 
+          description: newQuizDescription.trim() || undefined 
+        })
       });
+      if (!res.ok) throw new Error('Erro ao criar quiz.');
       setIsCreateModalOpen(false);
       setNewQuizTitle('');
+      setNewQuizDescription('');
       fetchQuizzes();
     } catch (e) {
       console.error(e);
+      alert('Erro ao criar o quiz.');
     }
   };
 
@@ -63,12 +71,14 @@ export default function AdminApp() {
   const deleteQuiz = async () => {
     if (quizToDelete === null) return;
     try {
-      await fetch(`${API_URL}/quizzes/${quizToDelete}`, { method: 'DELETE' });
+      const res = await fetch(`${API_URL}/quizzes/${quizToDelete}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error('Erro ao deletar quiz.');
       setIsDeleteModalOpen(false);
       setQuizToDelete(null);
       fetchQuizzes();
     } catch (e) {
       console.error(e);
+      alert('Erro ao excluir o quiz.');
     }
   };
 
@@ -109,12 +119,17 @@ export default function AdminApp() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {quizzes.map(quiz => (
-              <div key={quiz.id} className="bg-slate-800 p-6 rounded-2xl border border-slate-700 hover:border-indigo-500 transition-colors">
-                <h3 className="text-2xl font-bold mb-2">{quiz.title}</h3>
-                <p className="text-slate-400 mb-6">{quiz.questions?.length || 0} perguntas</p>
+              <div key={quiz.id} className="bg-slate-800 p-6 rounded-2xl border border-slate-700 hover:border-indigo-500 transition-colors flex flex-col justify-between">
+                <div>
+                  <h3 className="text-2xl font-bold mb-1">{quiz.title}</h3>
+                  {quiz.description && (
+                    <p className="text-slate-300 text-sm mb-3 line-clamp-2">{quiz.description}</p>
+                  )}
+                  <p className="text-slate-400 text-sm mb-6">{quiz.questions?.length || 0} perguntas</p>
+                </div>
                 
                 <div className="flex gap-3">
-                  <button onClick={() => setEditingQuizId(quiz.id)} className="flex-1 bg-slate-700 hover:bg-slate-600 py-2 rounded-lg font-medium flex items-center justify-center gap-2">
+                  <button onClick={() => setEditingQuizId(quiz.id)} className="flex-1 bg-slate-700 hover:bg-slate-600 py-2 rounded-lg font-medium flex items-center justify-center gap-2 transition-colors">
                     <Edit size={18} /> Editar
                   </button>
                   <button onClick={() => confirmDelete(quiz.id)} className="bg-red-500/20 text-red-400 hover:bg-red-500 hover:text-white p-2 rounded-lg transition-colors">
@@ -148,9 +163,9 @@ export default function AdminApp() {
             </div>
             
             <form onSubmit={handleCreateQuizSubmit} className="p-6">
-              <div className="mb-6">
+              <div className="mb-4">
                 <label className="block text-sm font-medium text-slate-400 mb-2">
-                  Nome do Quiz
+                  Nome do Quiz *
                 </label>
                 <input
                   type="text"
@@ -159,6 +174,19 @@ export default function AdminApp() {
                   onChange={(e) => setNewQuizTitle(e.target.value)}
                   className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all"
                   placeholder="Ex: Conhecimentos Gerais"
+                />
+              </div>
+
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-slate-400 mb-2">
+                  Descrição (opcional)
+                </label>
+                <textarea
+                  value={newQuizDescription}
+                  onChange={(e) => setNewQuizDescription(e.target.value)}
+                  rows={2}
+                  className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all resize-none"
+                  placeholder="Ex: Quiz bíblico com 50 questões..."
                 />
               </div>
               
