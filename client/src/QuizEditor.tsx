@@ -15,6 +15,7 @@ const API_URL = window.location.hostname === 'localhost' || window.location.host
 
 export default function QuizEditor({ quiz, onClose, onSave }: { quiz: any, onClose: () => void, onSave: () => void }) {
   const [title, setTitle] = useState(quiz.title);
+  const [description, setDescription] = useState(quiz.description || '');
   const [questions, setQuestions] = useState<Question[]>(
     quiz.questions?.length > 0 
       ? quiz.questions 
@@ -28,7 +29,7 @@ export default function QuizEditor({ quiz, onClose, onSave }: { quiz: any, onClo
       await fetch(`${API_URL}/quizzes/${quiz.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title, questions })
+        body: JSON.stringify({ title, description, questions })
       });
       onSave(); // notify parent to refresh and close
     } catch (e) {
@@ -90,7 +91,15 @@ export default function QuizEditor({ quiz, onClose, onSave }: { quiz: any, onClo
             type="text"
             value={title}
             onChange={e => setTitle(e.target.value)}
-            className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white text-xl font-bold focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all"
+            className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white text-xl font-bold focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all mb-4"
+          />
+          <label className="block text-sm font-medium text-slate-400 mb-2">Descrição do Quiz</label>
+          <textarea
+            value={description}
+            onChange={e => setDescription(e.target.value)}
+            rows={2}
+            className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all resize-none"
+            placeholder="Digite uma descrição para o quiz..."
           />
         </div>
 

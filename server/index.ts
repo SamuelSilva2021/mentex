@@ -43,7 +43,7 @@ app.post('/api/quizzes', async (req, res) => {
   res.json(quiz);
 });
 app.put('/api/quizzes/:id', async (req, res) => {
-  const { title, questions } = req.body;
+  const { title, description, questions } = req.body;
   const quizId = parseInt(req.params.id);
 
   try {
@@ -53,6 +53,7 @@ app.put('/api/quizzes/:id', async (req, res) => {
       where: { id: quizId },
       data: {
         title,
+        description,
         questions: {
           create: questions.map((q: any) => ({
             text: q.text,
