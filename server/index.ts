@@ -330,7 +330,7 @@ io.on('connection', (socket: Socket<ClientToServerEvents, ServerToClientEvents>)
   });
 
   // HOST starts the game
-  socket.on('host:start-game', ({ pin, randomize }) => {
+  socket.on('host:start-game', ({ pin, randomize, questionCount }) => {
     const room = rooms[pin];
     if (room && room.hostId === socket.id && room.state === 'LOBBY') {
       if (randomize) {
@@ -345,6 +345,12 @@ io.on('connection', (socket: Socket<ClientToServerEvents, ServerToClientEvents>)
       } else {
         console.log(`[Host ${socket.id}] Iniciando sala ${pin} na SEQUÊNCIA original.`);
       }
+      
+      if (questionCount && questionCount > 0 && questionCount < room.questions.length) {
+        console.log(`[Host ${socket.id}] Limitando quiz para ${questionCount} perguntas.`);
+        room.questions = room.questions.slice(0, questionCount);
+      }
+
       room.currentQuestionIndex = 0;
       startQuestion(pin, room);
     }

@@ -26,6 +26,7 @@ export default function HostApp() {
   const [selectedQuiz, setSelectedQuiz] = useState<number | null>(null);
   const [isReconnecting, setIsReconnecting] = useState<boolean>(true);
   const [randomize, setRandomize] = useState<boolean>(false);
+  const [questionCount, setQuestionCount] = useState<number>(0);
 
   useEffect(() => {
     fetch(`${SERVER_URL}/api/quizzes`)
@@ -97,11 +98,15 @@ export default function HostApp() {
 
   const selectQuiz = (id: number) => {
     setSelectedQuiz(id);
+    const quiz = quizzes.find(q => q.id === id);
+    if (quiz) {
+      setQuestionCount(quiz.questions?.length || 0);
+    }
     socket.emit('host:create-room', { quizId: id });
   };
 
   const startGame = () => {
-    if (pin) socket.emit('host:start-game', { pin, randomize });
+    if (pin) socket.emit('host:start-game', { pin, randomize, questionCount });
   };
 
   const nextState = () => {
@@ -182,6 +187,18 @@ export default function HostApp() {
                 />
                 <span className="font-medium text-sm md:text-base whitespace-nowrap">Aleatorizar</span>
               </label>
+              <div className="flex items-center gap-2 bg-white/10 px-3 py-2 rounded-xl border border-white/20">
+                <label className="text-white/80 font-medium text-sm md:text-base whitespace-nowrap">Qtd:</label>
+                <input 
+                  type="number" 
+                  min="1"
+                  max={quizzes.find(q => q.id === selectedQuiz)?.questions?.length || 1}
+                  value={questionCount || ''}
+                  onChange={e => setQuestionCount(parseInt(e.target.value) || 1)}
+                  className="bg-transparent text-white font-bold w-12 focus:outline-none text-center"
+                  title="Quantidade de perguntas para usar no jogo"
+                />
+              </div>
               <div className="bg-white/10 backdrop-blur-md px-4 py-2 rounded-xl flex items-center gap-2 border border-white/20">
                 <Users size={20} className="text-white/80" />
                 <span className="font-bold text-lg">{players.length}</span>
