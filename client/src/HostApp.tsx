@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { io, Socket } from 'socket.io-client';
-import { Users, Play, ArrowLeft, Triangle, Diamond, Circle, Square, LogOut } from 'lucide-react';
+import { Users, Play, Triangle, Diamond, Circle, Square, LogOut } from 'lucide-react';
 import { 
   ServerToClientEvents, 
   ClientToServerEvents, 
