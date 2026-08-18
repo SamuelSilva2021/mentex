@@ -361,7 +361,7 @@ io.on('connection', (socket: Socket<ClientToServerEvents, ServerToClientEvents>)
       } else {
         room.state = 'PODIUM';
         const sortedPlayers = [...room.players].sort((a, b) => b.score - a.score);
-        io.to(pin).emit('game:state-update', { state: 'PODIUM', podium: sortedPlayers.slice(0, 3) });
+        io.to(pin).emit('game:state-update', { state: 'PODIUM', podium: sortedPlayers });
       }
     }
   });
@@ -374,7 +374,7 @@ io.on('connection', (socket: Socket<ClientToServerEvents, ServerToClientEvents>)
     room.state = 'PODIUM';
     if (room.questionTimeout) clearTimeout(room.questionTimeout);
     const sortedPlayers = [...room.players].sort((a, b) => b.score - a.score);
-    io.to(pin).emit('game:state-update', { state: 'PODIUM', podium: sortedPlayers.slice(0, 3) });
+    io.to(pin).emit('game:state-update', { state: 'PODIUM', podium: sortedPlayers });
   });
 
   // PLAYER submits answer

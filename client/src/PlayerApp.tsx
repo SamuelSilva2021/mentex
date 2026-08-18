@@ -241,14 +241,45 @@ export default function PlayerApp() {
     }
 
     if (gameState === 'PODIUM') {
+      const myPosition = leaderboard.findIndex(p => p.nickname === nickname);
+      const medals = ['🥇', '🥈', '🥉'];
+
       return (
-        <div className="min-h-screen bg-gradient-to-br from-indigo-900 to-purple-900 flex flex-col items-center justify-center p-6 text-white text-center relative overflow-hidden">
+        <div className="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-slate-900 flex flex-col items-center p-6 text-white relative overflow-hidden">
           <div className="absolute inset-0 bg-yellow-500/10 blur-[100px] z-0 pointer-events-none"></div>
-          <h2 className="text-5xl font-black mb-6 text-yellow-400 drop-shadow-[0_0_15px_rgba(250,204,21,0.5)] z-10">Fim de Jogo!</h2>
-          <p className="text-2xl font-bold mb-12 z-10 text-white/80">Olhe para a tela principal!</p>
-          <div className="bg-white/10 backdrop-blur-md p-8 rounded-3xl z-10 border border-white/20 shadow-2xl">
-            <p className="text-xl text-white/60 mb-4 font-medium">Pontuação Final</p>
-            <p className="text-6xl font-black text-yellow-300 drop-shadow-md">{answerResult?.totalScore || 0}</p>
+
+          <h2 className="text-5xl font-black mt-8 mb-2 text-yellow-400 drop-shadow-[0_0_15px_rgba(250,204,21,0.5)] z-10">Fim de Jogo!</h2>
+          {myPosition >= 0 && (
+            <p className="text-white/70 text-lg font-medium mb-6 z-10">
+              Você ficou em <span className="text-yellow-300 font-black text-2xl">{myPosition + 1}º lugar</span>!
+            </p>
+          )}
+
+          <div className="w-full max-w-sm space-y-3 z-10 flex-1 overflow-y-auto pb-6">
+            {leaderboard.map((p, i) => {
+              const isMe = p.nickname === nickname;
+              return (
+                <div
+                  key={i}
+                  className={`flex items-center justify-between px-5 py-4 rounded-2xl font-bold shadow-lg border transition-all
+                    ${isMe
+                      ? 'bg-yellow-400/20 border-yellow-400/60 scale-[1.02] shadow-yellow-400/20'
+                      : 'bg-white/10 border-white/10'}`}
+                >
+                  <div className="flex items-center gap-4">
+                    <span className="text-2xl w-8 text-center">
+                      {medals[i] ?? <span className="text-white/50 text-xl font-black">{i + 1}</span>}
+                    </span>
+                    <span className={`text-xl ${isMe ? 'text-yellow-300 font-black' : 'text-white'}`}>
+                      {p.nickname}{isMe && ' (você)'}
+                    </span>
+                  </div>
+                  <span className={`text-xl font-black ${isMe ? 'text-yellow-300' : 'text-indigo-300'}`}>
+                    {p.score} <span className="text-sm font-medium text-white/50">pts</span>
+                  </span>
+                </div>
+              );
+            })}
           </div>
         </div>
       );
