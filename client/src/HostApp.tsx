@@ -29,9 +29,20 @@ export default function HostApp() {
   const [questionCount, setQuestionCount] = useState<number>(0);
 
   useEffect(() => {
-    fetch(`${SERVER_URL}/api/quizzes`)
+    const token = localStorage.getItem('mentex_token');
+    const headers: Record<string, string> = {};
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    fetch(`${SERVER_URL}/api/quizzes`, { headers })
       .then(res => res.json())
-      .then(data => setQuizzes(data));
+      .then(data => {
+        if (Array.isArray(data)) {
+          setQuizzes(data);
+        }
+      })
+      .catch(console.error);
 
     const savedPin = sessionStorage.getItem('mentex-host-session');
     if (savedPin) {

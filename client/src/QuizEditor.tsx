@@ -13,7 +13,17 @@ const API_URL = window.location.hostname === 'localhost' || window.location.host
   ? `http://${window.location.hostname}:3001/api`
   : 'https://mentex-mkii.onrender.com/api';
 
-export default function QuizEditor({ quiz, onClose, onSave }: { quiz: any, onClose: () => void, onSave: () => void }) {
+export default function QuizEditor({ 
+  quiz, 
+  token,
+  onClose, 
+  onSave 
+}: { 
+  quiz: any; 
+  token?: string;
+  onClose: () => void; 
+  onSave: () => void; 
+}) {
   const [title, setTitle] = useState(quiz.title);
   const [description, setDescription] = useState(quiz.description || '');
   const [questions, setQuestions] = useState<Question[]>(
@@ -26,9 +36,14 @@ export default function QuizEditor({ quiz, onClose, onSave }: { quiz: any, onClo
   const handleSave = async () => {
     setIsSaving(true);
     try {
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
       const res = await fetch(`${API_URL}/quizzes/${quiz.id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({ title, description, questions })
       });
 

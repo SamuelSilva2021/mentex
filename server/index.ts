@@ -14,52 +14,257 @@ import {
 import { PrismaClient } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import pg from 'pg';
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
+const JWT_SECRET = process.env.JWT_SECRET || 'mentex_secret_jwt_key_2026';
+
 const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
 const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
 
-// API Endpoints
-app.get('/api/quizzes', async (req, res) => {
-  const quizzes = await prisma.quiz.findMany({ 
-    include: { questions: true },
-    orderBy: { id: 'asc' }
-  });
-  // parse JSON options
-  const formatted = quizzes.map((q: any) => ({
-    ...q,
-    questions: q.questions.map((quest: any) => ({
-      ...quest,
-      options: JSON.parse(quest.options)
-    }))
-  }));
-  res.json(formatted);
-});
+interface AuthRequest extends express.Request {
+  user?: {
+    id: number;
+    email: string;
+    name?: string | null;
+  };
+}
 
-app.post('/api/quizzes', async (req, res) => {
-  const { title, description } = req.body;
-  const quiz = await prisma.quiz.create({
-    data: { 
-      title, 
-      description: description ?? null 
+// Authentication Middlewares
+const requireAuth = (req: AuthRequest, res: express.Response, next: express.NextFunction) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ error: 'Token de autenticação não fornecido.' });
+  }
+
+  const token = authHeader.split(' ')[1];
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET) as { id: number; email: string; name?: string | null };
+    req.user = decoded;
+    next();
+  } catch (err) {
+    return res.status(401).json({ error: 'Sessão expirada ou inválida. Faça login novamente.' });
+  }
+};
+
+const optionalAuth = (req: AuthRequest, res: express.Response, next: express.NextFunction) => {
+  const authHeader = req.headers.authorization;
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    const token = authHeader.split(' ')[1];
+    try {
+      const decoded = jwt.verify(token, JWT_SECRET) as { id: number; email: string; name?: string | null };
+      req.user = decoded;
+    } catch (err) {
+      // ignore invalid token for optional auth
     }
-  });
-  res.json(quiz);
-});
+  }
+  next();
+};
 
-app.put('/api/quizzes/:id', async (req, res) => {
-  const { title, description, questions } = req.body;
-  const quizId = parseInt(req.params.id);
+// ==================== AUTH ROUTES ====================
+app.post('/api/auth/register', async (req, res) => {
+  const { name, email, password } = req.body;
+
+  if (!email || !password) {
+    return res.status(400).json({ error: 'E-mail e senha são obrigatórios.' });
+  }
+
+  if (password.length < 6) {
+    return res.status(400).json({ error: 'A senha deve ter no mínimo 6 caracteres.' });
+  }
+
+  const normalizedEmail = email.toLowerCase().trim();
 
   try {
+    const existing = await prisma.user.findUnique({ where: { email: normalizedEmail } });
+    if (existing) {
+      return res.status(400).json({ error: 'Este e-mail já está cadastrado.' });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const user = await prisma.user.create({
+      data: {
+        name: name?.trim() || null,
+        email: normalizedEmail,
+        password: hashedPassword
+      }
+    });
+
+    const token = jwt.sign(
+      { id: user.id, email: user.email, name: user.name },
+      JWT_SECRET,
+      { expiresIn: '7d' }
+    );
+
+    res.status(201).json({
+      token,
+      user: { id: user.id, email: user.email, name: user.name }
+    });
+  } catch (e) {
+    console.error('Register error:', e);
+    res.status(500).json({ error: 'Erro ao cadastrar usuário.' });
+  }
+});
+
+app.post('/api/auth/login', async (req, res) => {
+  const { email, password } = req.body;
+
+  if (!email || !password) {
+    return res.status(400).json({ error: 'E-mail e senha são obrigatórios.' });
+  }
+
+  const normalizedEmail = email.toLowerCase().trim();
+
+  try {
+    const user = await prisma.user.findUnique({ where: { email: normalizedEmail } });
+    if (!user) {
+      return res.status(401).json({ error: 'E-mail ou senha incorretos.' });
+    }
+
+    const valid = await bcrypt.compare(password, user.password);
+    if (!valid) {
+      return res.status(401).json({ error: 'E-mail ou senha incorretos.' });
+    }
+
+    const token = jwt.sign(
+      { id: user.id, email: user.email, name: user.name },
+      JWT_SECRET,
+      { expiresIn: '7d' }
+    );
+
+    res.json({
+      token,
+      user: { id: user.id, email: user.email, name: user.name }
+    });
+  } catch (e) {
+    console.error('Login error:', e);
+    res.status(500).json({ error: 'Erro ao realizar login.' });
+  }
+});
+
+app.get('/api/auth/me', requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: req.user!.id },
+      select: { id: true, email: true, name: true, createdAt: true }
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: 'Usuário não encontrado.' });
+    }
+
+    res.json({ user });
+  } catch (e) {
+    res.status(500).json({ error: 'Erro ao obter dados do usuário.' });
+  }
+});
+
+// ==================== QUIZ ROUTES ====================
+app.get('/api/quizzes', optionalAuth, async (req: AuthRequest, res) => {
+  const isAdminRequest = req.query.admin === 'true';
+
+  try {
+    let whereClause: any = {};
+
+    if (isAdminRequest) {
+      if (!req.user) {
+        return res.status(401).json({ error: 'Acesso não autorizado ao painel admin.' });
+      }
+      // Show only user's quizzes
+      whereClause = { userId: req.user.id };
+    } else {
+      // For Host / public games: show public quizzes, orphan default quizzes, or user's own quizzes if authenticated
+      if (req.user) {
+        whereClause = {
+          OR: [
+            { isPublic: true },
+            { userId: null },
+            { userId: req.user.id }
+          ]
+        };
+      } else {
+        whereClause = {
+          OR: [
+            { isPublic: true },
+            { userId: null }
+          ]
+        };
+      }
+    }
+
+    const quizzes = await prisma.quiz.findMany({ 
+      where: whereClause,
+      include: { questions: true },
+      orderBy: { id: 'asc' }
+    });
+
+    // parse JSON options
+    const formatted = quizzes.map((q: any) => ({
+      ...q,
+      questions: q.questions.map((quest: any) => ({
+        ...quest,
+        options: JSON.parse(quest.options)
+      }))
+    }));
+
+    res.json(formatted);
+  } catch (e) {
+    console.error('Error fetching quizzes:', e);
+    res.status(500).json({ error: 'Erro ao carregar quizzes.' });
+  }
+});
+
+app.post('/api/quizzes', requireAuth, async (req: AuthRequest, res) => {
+  const { title, description } = req.body;
+  if (!title || !title.trim()) {
+    return res.status(400).json({ error: 'O título do quiz é obrigatório.' });
+  }
+
+  try {
+    const quiz = await prisma.quiz.create({
+      data: { 
+        title: title.trim(), 
+        description: description?.trim() || null,
+        userId: req.user!.id,
+        isPublic: false
+      }
+    });
+    res.status(201).json(quiz);
+  } catch (e) {
+    console.error('Error creating quiz:', e);
+    res.status(500).json({ error: 'Erro ao criar quiz.' });
+  }
+});
+
+app.put('/api/quizzes/:id', requireAuth, async (req: AuthRequest, res) => {
+  const { title, description, questions } = req.body;
+  const quizId = parseInt(req.params.id as string);
+
+  try {
+    const existing = await prisma.quiz.findUnique({ where: { id: quizId } });
+    if (!existing) {
+      return res.status(404).json({ error: 'Quiz não encontrado.' });
+    }
+
+    // Check ownership (if quiz has a userId and it's not the current user)
+    if (existing.userId !== null && existing.userId !== req.user!.id) {
+      return res.status(403).json({ error: 'Você não tem permissão para editar este quiz.' });
+    }
+
     const updateData: any = {
       title,
       description: description !== undefined ? description : null,
     };
+
+    // If quiz was orphan (userId: null), claim it for the editing user
+    if (existing.userId === null) {
+      updateData.userId = req.user!.id;
+    }
 
     if (questions && Array.isArray(questions)) {
       await prisma.question.deleteMany({ where: { quizId } });
@@ -82,16 +287,28 @@ app.put('/api/quizzes/:id', async (req, res) => {
     res.json(updatedQuiz);
   } catch (e) {
     console.error('Error updating quiz:', e);
-    res.status(500).json({ error: 'Failed to update quiz' });
+    res.status(500).json({ error: 'Falha ao atualizar quiz.' });
   }
 });
 
-app.delete('/api/quizzes/:id', async (req, res) => {
+app.delete('/api/quizzes/:id', requireAuth, async (req: AuthRequest, res) => {
+  const quizId = parseInt(req.params.id as string);
+
   try {
-    await prisma.quiz.delete({ where: { id: parseInt(req.params.id) } });
+    const existing = await prisma.quiz.findUnique({ where: { id: quizId } });
+    if (!existing) {
+      return res.status(404).json({ error: 'Quiz não encontrado.' });
+    }
+
+    if (existing.userId !== null && existing.userId !== req.user!.id) {
+      return res.status(403).json({ error: 'Você não tem permissão para excluir este quiz.' });
+    }
+
+    await prisma.quiz.delete({ where: { id: quizId } });
     res.json({ success: true });
   } catch (e) {
-    res.status(500).json({ error: 'Failed to delete' });
+    console.error('Error deleting quiz:', e);
+    res.status(500).json({ error: 'Falha ao excluir quiz.' });
   }
 });
 

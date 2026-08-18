@@ -6,11 +6,25 @@ datasource db {
   provider = "postgresql"
 }
 
+model User {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  name      String?
+  password  String
+  createdAt DateTime @default(now())
+  
+  quizzes   Quiz[]
+}
+
 model Quiz {
   id          Int        @id @default(autoincrement())
+  userId      Int?
   title       String
   description String?
+  isPublic    Boolean    @default(false)
   createdAt   DateTime   @default(now())
+  
+  user        User?      @relation(fields: [userId], references: [id], onDelete: Cascade)
   questions   Question[]
 }
 
