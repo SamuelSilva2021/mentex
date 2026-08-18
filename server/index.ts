@@ -333,10 +333,10 @@ io.on('connection', (socket: Socket<ClientToServerEvents, ServerToClientEvents>)
     const room = rooms[pin];
     if (room && room.hostId === socket.id && room.state === 'LOBBY') {
       if (randomize) {
-        for (let i = room.questions.length - 1; i > 0; i--) {
-          const j = Math.floor(Math.random() * (i + 1));
-          [room.questions[i], room.questions[j]] = [room.questions[j], room.questions[i]];
-        }
+        console.log(`[Host ${socket.id}] Iniciando sala ${pin} COM perguntas aleatórias.`);
+        room.questions.sort(() => Math.random() - 0.5);
+      } else {
+        console.log(`[Host ${socket.id}] Iniciando sala ${pin} na SEQUÊNCIA original.`);
       }
       room.currentQuestionIndex = 0;
       startQuestion(pin, room);
